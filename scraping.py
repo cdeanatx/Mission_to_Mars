@@ -1,13 +1,33 @@
+# Import Splinter and BeautifulSoup
+from splinter import Browser
+from bs4 import BeautifulSoup as soup
+from webdriver_manager.chrome import ChromeDriverManager
+import pandas as pd
+import datetime as dt
+
 def scrape_all():
-    # Import Splinter and BeautifulSoup
-    from splinter import Browser
-    from bs4 import BeautifulSoup as soup
-    from webdriver_manager.chrome import ChromeDriverManager
-    import pandas as pd
 
     # Set up Splinter
     executable_path = {'executable_path': ChromeDriverManager().install()}
-    browser = Browser('chrome', **executable_path, headless=False)
+    browser = Browser('chrome', **executable_path, headless=True)
+
+    # save return variables
+    news_title, news_paragraph = mars_news(browser)
+
+    data = {
+        'news_title': news_title,
+        'news_paragraph': news_paragraph,
+        'featured_image': featured_image(browser),
+        'facts': mars_facts(),
+        'last_modified': dt.datetime.now()
+    }
+
+    # Close the automated browser
+    browser.quit()
+    
+    return data
+
+def mars_news(browser):
 
     # Visit the Mars NASA news site
     url = 'https://redplanetscience.com'
@@ -19,10 +39,19 @@ def scrape_all():
     # Use BS4 to identify elements to scrape
     html = browser.html
     news_soup = soup(html, 'html.parser')
-    slide_elem = news_soup.select_one('div.list_text')
-    slide_elem.find('div', class_='content_title')
-    news_title = slide_elem.find('div', class_='content_title').get_text()
-    news_p = slide_elem.find('div', class_='article_teaser_body').get_text()
+
+    # Error handling
+    try:
+        slide_elem = news_soup.select_one('div.list_text')
+        slide_elem.find('div', class_='content_title')
+        news_title = slide_elem.find('div', class_='content_title').get_text()
+        news_p = slide_elem.find('div', class_='article_teaser_body').get_text()
+    except AttributeError:
+        return None, None
+    
+    return news_title, news_p
+
+def featured_image(browser):
 
     # Visit new page
     url = 'https://spaceimages-mars.com/'
@@ -36,26 +65,36 @@ def scrape_all():
     # Use BS4 to pull the link to the currently featured image
     html = browser.html
     img_soup = soup(html, 'html.parser')
-    img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')
+
+    # Error handling
+    try:
+        img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')
+    except AttributeError:
+        return None
 
     # Create full link URL
     img_url = f'{url + img_url_rel}'
 
+    return img_url
+
+def mars_facts():
+
     # Visit new page
     url = 'https://galaxyfacts-mars.com/'
-    browser.visit(url)
-    browser.is_element_present_by_css('div.container-fluid', wait_time=1)
-    html = browser.html
-    fact_soup = soup(html, 'html.parser')
 
-    # Pull in Earth to Mars comparison table. Line 54 is optional but creates a more concise df
-    df = pd.read_html(url)[0]
+    # Error handling
+    try:
+        # Pull in Earth to Mars comparison table. Line commented-out below is optional but provides a more concise df
+        df = pd.read_html(url)[0]
+    except BaseException:
+        return None
+
     df.columns = ['description', 'Mars', 'Earth']
     df.set_index('description', inplace=True)
     # df = df.iloc[1:,:]
 
     # Convert df to html
-    df.to_html()
+    return df.to_html()
 
-    # Close the automated browser
-    browser.quit()
+if __name__ == '__main__':
+    print(scrape_all())
