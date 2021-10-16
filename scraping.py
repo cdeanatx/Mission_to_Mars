@@ -92,10 +92,10 @@ def mars_facts():
 
     df.columns = ['description', 'Mars', 'Earth']
     df.set_index('description', inplace=True)
-    # df = df.iloc[1:,:]
+    df = df.iloc[1:,:]
 
     # Convert df to html
-    return df.to_html()
+    return df.to_html(classes='table-striped', index_names=False, justify='center')
 
 def hemi_scrape(browser):
 
