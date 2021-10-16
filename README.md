@@ -15,7 +15,7 @@ The purpose of this project is to scrape data from multiple sources and use it t
 
 ## Webpage Preview
 
-![Website](github.com/cdeanatx/blob/main/Website.png)
+![Website](github.com/cdeanatx/Mission_to_Mars/blob/main/Website.png)
 
 ## List of Sources
 
